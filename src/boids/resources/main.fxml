@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.Scene?>
+<?import javafx.scene.SubScene?>
+<?import javafx.scene.text.*?>
+<Scene xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/11.0.1" fx:controller="boids.Controller">
+    <root>
+        <SplitPane dividerPositions="0.746995994659546">
+            <items>
+                <SubScene fx:id="boidField" fill="BLACK" height="200.0" width="200.0">
+                    <root>
+                        <Region/>
+                    </root>
+                </SubScene>
+                <Accordion fx:id="menu" maxHeight="1.7976931348623157E308" maxWidth="310.0">
+                    <panes>
+                        <TitledPane fx:id="moveControl" prefHeight="850.0" style="-fx-background-color: black;"
+                                    text="Simulation setup">
+                            <content>
+                                <VBox fx:id="buttons" spacing="5.0">
+                                    <children>
+                                        <Button fx:id="startAnimationButton" onAction="#handleStartClick" text="Start"/>
+                                        <Button fx:id="stopAnimationButton" onAction="#handleStopClick" text="Stop"/>
+                                        <Button fx:id="continueAnimationButton" onAction="#handleContinueClick"
+                                                text="1s interval"/>
+                                        <CheckBox fx:id="showNeighborhoodCheckBox" onAction="#handleShowNeighborhood"
+                                                  text="Show neighborhood"/>
+                                        <CheckBox fx:id="showVectorsCheckBox" onAction="#handleShowVectors"
+                                                  text="Show vectors"/>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="flockRules" animated="true" prefHeight="850.0" text="Swarming">
+                            <content>
+                                <VBox spacing="10.0">
+                                    <children>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Amount of boids"
+                                              wrappingWidth="98.34765625"/>
+                                        <Slider fx:id="BoidAmount" majorTickUnit="20.0" max="1000.0" minorTickCount="20"
+                                                showTickLabels="true" showTickMarks="true" value="20.0"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Cohesion"
+                                              wrappingWidth="98.34765625"/>
+                                        <Slider fx:id="Cohesion" blockIncrement="0.2" majorTickUnit="0.5" max="3.0"
+                                                minorTickCount="1" showTickLabels="true" showTickMarks="true"
+                                                value="0.5"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Separation"
+                                              wrappingWidth="73.13671875"/>
+                                        <Slider fx:id="Separation" blockIncrement="0.1" majorTickUnit="0.5" max="3.0"
+                                                minorTickCount="1" prefHeight="14.0" prefWidth="254.0"
+                                                showTickLabels="true" showTickMarks="true" value="0.5"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Aligment"/>
+                                        <Slider fx:id="Alignment" blockIncrement="0.1" majorTickUnit="0.5" max="3.0"
+                                                minorTickCount="1" showTickLabels="true" showTickMarks="true"
+                                                value="0.5"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Max velocity"
+                                              wrappingWidth="146.326171875"/>
+                                        <Slider fx:id="MaxVelocity" blockIncrement="1.0" majorTickUnit="4.0" max="20.0"
+                                                min="1.0" minorTickCount="1" prefHeight="38.0" prefWidth="264.0"
+                                                showTickLabels="true" showTickMarks="true" value="1.0"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Neighboorhood type"
+                                              wrappingWidth="146.326171875"/>
+                                        <ChoiceBox fx:id="neighborhoodChoiceBox" prefWidth="150.0"/>
+
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Neighborhood distance"
+                                              wrappingWidth="146.326171875"/>
+                                        <Slider fx:id="Distance" blockIncrement="20.0" majorTickUnit="20.0"
+                                                minorTickCount="0" prefHeight="38.0" prefWidth="264.0"
+                                                showTickLabels="true" showTickMarks="true" value="30.0"/>
+                                        <Label fx:id="neighborsAmount" text="Number of neighbors"/>
+                                        <Slider fx:id="NeighborAmount" majorTickUnit="10.0" max="50.0"
+                                                minorTickCount="0" showTickLabels="true" showTickMarks="true"
+                                                value="5.0"/>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="positionLogs" text="Logs">
+                            <content>
+                                <VBox fx:id="vboxLogs">
+                                    <children>
+                                        <ListView fx:id="boidsLogs"/>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </TitledPane>
+                        <TitledPane fx:id="cameraSetup" animated="true" prefHeight="850.0" text="Camera">
+                            <content>
+                                <VBox spacing="10.0">
+                                    <children>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Rotate X"
+                                              wrappingWidth="98.34765625"/>
+                                        <Slider fx:id="rotateX" blockIncrement="15.0" majorTickUnit="30.0" max="90.0"
+                                                min="-90.0" minorTickCount="30" showTickLabels="true"
+                                                showTickMarks="true"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Rotate Y"
+                                              wrappingWidth="98.34765625"/>
+                                        <Slider fx:id="rotateY" blockIncrement="15.0" majorTickUnit="30.0" max="90.0"
+                                                min="-90.0" minorTickCount="30" showTickLabels="true"
+                                                showTickMarks="true" value="45.0"/>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Zoom"
+                                              wrappingWidth="73.13671875"/>
+                                        <Slider fx:id="zoom" blockIncrement="500.0" majorTickUnit="500.0" max="3000.0"
+                                                min="-3000.0" minorTickCount="500" prefHeight="14.0" prefWidth="254.0"
+                                                showTickLabels="true" showTickMarks="true" value="-1500.0"/>
+                                        <Button fx:id="zoomOut" mnemonicParsing="false" onAction="#handleZoomOut"
+                                                text="Zoom out"/>
+                                        <Button fx:id="zoomIn" mnemonicParsing="false" onAction="#handleZoomIn"
+                                                text="Zoom in"/>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </TitledPane>
+                    </panes>
+                </Accordion>
+            </items>
+        </SplitPane>
+    </root>
+</Scene>
