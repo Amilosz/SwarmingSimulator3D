@@ -1,2 +1,3 @@
 # Project exclude paths
 /out/
+!/SwarmingSimulator3D.iml

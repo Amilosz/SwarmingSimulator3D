@@ -21,8 +21,9 @@ public class Main extends Application {
         root.getStylesheets().add(getClass().getResource("resources/application.css").toExternalForm());
 
         primaryStage.setScene(root);
-        primaryStage.setTitle("Boid simulation v. 0.1");
-        primaryStage.setMaximized(true);
+        primaryStage.setTitle("Boid simulation v.1.0");
+        //primaryStage.setMaximized(true);
+        primaryStage.setFullScreen(true);
         primaryStage.show();
     }
 

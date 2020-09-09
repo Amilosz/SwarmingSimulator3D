@@ -1,7 +1,13 @@
 #boidField {
-    -fx-background-color: gray;
+    -fx-background-color: black;
 }
-
 #menu {
     -fx-background-color: gray;
+}
+#splitPane {
+    -fx-background-color: gray;
+}
+.titled-pane > .title
+{
+    -fx-background-color: -fx-box-border, -fx-inner-border, -fx-body-color;
 }

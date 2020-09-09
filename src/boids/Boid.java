@@ -10,10 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import static java.lang.StrictMath.abs;
 import static java.lang.StrictMath.pow;
 
 public class Boid {
-    static double MAX_VELOCITY = 2;
+    static double MAX_VELOCITY = 15;
+    static double MIN_VELOCITY = 5;
     private final Node boidView;
     private final Node neighborhoodView;
     List<Boid> neighborhoodList = new ArrayList<>();
@@ -30,7 +32,6 @@ public class Boid {
     private final int ENVIRONMENTS_DEPTH;
     private final int ENVIRONMENT_WIDTH;
     private final int ENVIRONMENTS_HEIGHT;
-    private final double boidSize = 3.5;
 
     public Boid(double x, double y, double z, int ENVIRONMENT_WIDTH, int ENVIRONMENTS_HEIGHT, int ENVIRONMENTS_DEPTH) {
         boidSphere = new Sphere(20);
@@ -48,7 +49,7 @@ public class Boid {
 
 
         location = new Vector3D(x, y, z);
-        velocity = new Vector3D(1, 1, 1);
+        velocity = new Vector3D(random.nextInt(5), random.nextInt(5), random.nextInt(5));
 
         this.ENVIRONMENT_WIDTH = ENVIRONMENT_WIDTH;
         this.ENVIRONMENTS_HEIGHT = ENVIRONMENTS_HEIGHT;
@@ -65,14 +66,15 @@ public class Boid {
 
     @Override
     public String toString() {
-        String x = String.format("%.2f", getBoidView().getTranslateX());
-        String y = String.format("%.2f", getBoidView().getTranslateY());
+        String x = String.format("%.0f", getBoidView().getTranslateX());
+        String y = String.format("%.0f", getBoidView().getTranslateY());
 
         return getName() + "  X:" + x + "  Y: " + y;
     }
 
-    public void update(boolean showNeighborhood, boolean showVectors, double alignmentWeight, double separationWeight, double cohesionWeight, double distance, double maxVelocity, NeighborhoodType neighborhoodType) {
+    public void update(boolean showNeighborhood, boolean showVectors, double alignmentWeight, double separationWeight, double cohesionWeight, double distance, double maxVelocity, double minVelocity) {
         MAX_VELOCITY = maxVelocity;
+        MIN_VELOCITY = minVelocity;
 
         if (!neighborhoodList.isEmpty()) {
             Vector3D cohesionForce = getCohesionControl(cohesionWeight);
@@ -89,13 +91,19 @@ public class Boid {
         }
 
         //wander();
-        //if (random.nextDouble() > 0.60d)
-        //    velocity = velocity.plus(new Vector3D(random.nextDouble() - 0.5, random.nextDouble() - 0.5, random.nextDouble() - 0.5).normalizeTo(0.5));
+        if (random.nextDouble() > 0.60d)
+            velocity = velocity.plus(new Vector3D(random.nextDouble() - 0.5, random.nextDouble() - 0.5, random.nextDouble() - 0.5).normalizeTo(0.5));
 
         bounceOffTheWallIfCollidingWith();
 
         //applyMove();
-        velocity = velocity.normalizeTo(MAX_VELOCITY);
+        if (velocity.getMagnitude()>MAX_VELOCITY)
+            velocity = velocity.normalizeTo(MAX_VELOCITY);
+        if (velocity.getMagnitude()<MIN_VELOCITY)
+            velocity = velocity.normalizeTo(MIN_VELOCITY);
+
+
+
         location = location.plus(velocity);
 
 
@@ -139,17 +147,17 @@ public class Boid {
 
     private Vector3D getCohesionControl(double forceWeight) {
         Vector3D neighbourhoodAverageLocation = getNeighbourhoodAverageLocation();
-        Vector3D cohesionControl = neighbourhoodAverageLocation.minus(location);
+        Vector3D cohesionControl = neighbourhoodAverageLocation.minus(this.location);
         return cohesionControl.normalizeTo(forceWeight);
     }
 
     private Vector3D getSeparationControl(double forceWeight) {
         Vector3D thisBoidLocation = location;
-        Vector3D control = new Vector3D(0d, 0d, 0d);
+        Vector3D separationControl = new Vector3D(0d, 0d, 0d);
         for (Boid neighbor : neighborhoodList) {
-            control = control.plus(thisBoidLocation.minus(neighbor.location));
+            separationControl = separationControl.plus(thisBoidLocation.minus(neighbor.location));
         }
-        return control.normalizeTo(forceWeight);
+        return separationControl.normalizeTo(forceWeight);
     }
 
     public Vector3D getNeighbourhoodAverageLocation() {
@@ -208,7 +216,7 @@ public class Boid {
         double differenceOfY = this.getBoidView().getTranslateY() - boid.getBoidView().getTranslateY();
         double differenceOfZ = this.getBoidView().getTranslateZ() - boid.getBoidView().getTranslateZ();
 
-        double result_c = Math.sqrt(pow(differenceOfX, 2) + pow(differenceOfY, 2) + pow(differenceOfZ, 2));
+        double result_c = Math.sqrt(abs(pow(differenceOfX, 2) + pow(differenceOfY, 2) + pow(differenceOfZ, 2)));
         return result_c;
     }
 

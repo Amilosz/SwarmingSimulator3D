@@ -1,78 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.Scene?>
 <?import javafx.scene.SubScene?>
-<?import javafx.scene.text.*?>
-<Scene xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/11.0.1" fx:controller="boids.Controller">
-    <root>
-        <SplitPane dividerPositions="0.746995994659546">
-            <items>
-                <SubScene fx:id="boidField" fill="BLACK" height="200.0" width="200.0">
-                    <root>
-                        <Region/>
-                    </root>
-                </SubScene>
-                <Accordion fx:id="menu" maxHeight="1.7976931348623157E308" maxWidth="310.0">
-                    <panes>
-                        <TitledPane fx:id="moveControl" prefHeight="850.0" style="-fx-background-color: black;"
-                                    text="Simulation setup">
-                            <content>
-                                <VBox fx:id="buttons" spacing="5.0">
-                                    <children>
-                                        <Button fx:id="startAnimationButton" onAction="#handleStartClick" text="Start"/>
-                                        <Button fx:id="stopAnimationButton" onAction="#handleStopClick" text="Stop"/>
-                                        <Button fx:id="continueAnimationButton" onAction="#handleContinueClick"
-                                                text="1s interval"/>
-                                        <CheckBox fx:id="showNeighborhoodCheckBox" onAction="#handleShowNeighborhood"
-                                                  text="Show neighborhood"/>
-                                        <CheckBox fx:id="showVectorsCheckBox" onAction="#handleShowVectors"
-                                                  text="Show vectors"/>
-                                    </children>
-                                </VBox>
-                            </content>
-                        </TitledPane>
-                        <TitledPane fx:id="flockRules" animated="true" prefHeight="850.0" text="Swarming">
-                            <content>
-                                <VBox spacing="10.0">
-                                    <children>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Amount of boids"
-                                              wrappingWidth="98.34765625"/>
-                                        <Slider fx:id="BoidAmount" majorTickUnit="20.0" max="1000.0" minorTickCount="20"
-                                                showTickLabels="true" showTickMarks="true" value="20.0"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Cohesion"
-                                              wrappingWidth="98.34765625"/>
-                                        <Slider fx:id="Cohesion" blockIncrement="0.2" majorTickUnit="0.5" max="3.0"
-                                                minorTickCount="1" showTickLabels="true" showTickMarks="true"
-                                                value="0.5"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Separation"
-                                              wrappingWidth="73.13671875"/>
-                                        <Slider fx:id="Separation" blockIncrement="0.1" majorTickUnit="0.5" max="3.0"
-                                                minorTickCount="1" prefHeight="14.0" prefWidth="254.0"
-                                                showTickLabels="true" showTickMarks="true" value="0.5"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Aligment"/>
-                                        <Slider fx:id="Alignment" blockIncrement="0.1" majorTickUnit="0.5" max="3.0"
-                                                minorTickCount="1" showTickLabels="true" showTickMarks="true"
-                                                value="0.5"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Max velocity"
-                                              wrappingWidth="146.326171875"/>
-                                        <Slider fx:id="MaxVelocity" blockIncrement="1.0" majorTickUnit="4.0" max="20.0"
-                                                min="1.0" minorTickCount="1" prefHeight="38.0" prefWidth="264.0"
-                                                showTickLabels="true" showTickMarks="true" value="1.0"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Neighboorhood type"
-                                              wrappingWidth="146.326171875"/>
-                                        <ChoiceBox fx:id="neighborhoodChoiceBox" prefWidth="150.0"/>
+<?import javafx.scene.control.Accordion?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
 
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Neighborhood distance"
-                                              wrappingWidth="146.326171875"/>
-                                        <Slider fx:id="Distance" blockIncrement="20.0" majorTickUnit="20.0"
-                                                minorTickCount="0" prefHeight="38.0" prefWidth="264.0"
-                                                showTickLabels="true" showTickMarks="true" value="30.0"/>
-                                        <Label fx:id="neighborsAmount" text="Number of neighbors"/>
-                                        <Slider fx:id="NeighborAmount" majorTickUnit="10.0" max="50.0"
-                                                minorTickCount="0" showTickLabels="true" showTickMarks="true"
-                                                value="5.0"/>
+<Scene xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="boids.Controller">
+    <root>
+        <SplitPane fx:id="splitPane" dividerPositions="0.746995994659546" style="-fx-border-color: gray;">
+            <items>
+            <SubScene fx:id="boidField" height="200.0" width="200.0">
+              <root>
+                <Region />
+              </root>
+            </SubScene>
+                <Accordion fx:id="menu" maxHeight="1.7976931348623157E308" maxWidth="310.0" style="-fx-background-color: dimgray;">
+                    <panes>
+                        <TitledPane fx:id="moveControl" prefHeight="850.0" text="Simulation setup">
+                            <content>
+                                <VBox fx:id="buttons" spacing="10.0">
+                                    <children>
+                              <HBox prefHeight="28.0" prefWidth="264.0" spacing="49.0">
+                                 <children>
+                                              <Button fx:id="startAnimationButton" onAction="#handleStartClick" text="Start" />
+                                              <Button fx:id="stopAnimationButton" onAction="#handleStopClick" text="Stop" />
+                                 </children>
+                              </HBox>
+                                        <Button fx:id="continueAnimationButton" onAction="#handleContinueClick" text="1s interval" />
+                                        <CheckBox fx:id="showNeighborhoodCheckBox" onAction="#handleShowNeighborhood" text="Show neighborhood" />
+                                        <CheckBox fx:id="showVectorsCheckBox" onAction="#handleShowVectors" text="Show vectors" />
                                     </children>
                                 </VBox>
                             </content>
@@ -80,35 +48,69 @@
                         <TitledPane fx:id="positionLogs" text="Logs">
                             <content>
                                 <VBox fx:id="vboxLogs">
-                                    <children>
-                                        <ListView fx:id="boidsLogs"/>
-                                    </children>
+                           <children>
+                              <ListView fx:id="boidsLogs" />
+                           </children>
                                 </VBox>
                             </content>
                         </TitledPane>
-                        <TitledPane fx:id="cameraSetup" animated="true" prefHeight="850.0" text="Camera">
+                  <TitledPane fx:id="cameraSetup" animated="true" prefHeight="850.0" text="Camera">
+                     <content>
+                        <VBox spacing="10.0">
+                           <children>
+                              <HBox prefHeight="34.0" prefWidth="264.0" spacing="50.0">
+                                 <children>
+                                    <Button fx:id="zoomIn" mnemonicParsing="false" onAction="#handleZoomIn" text="Zoom in" />
+                                    <Button fx:id="zoomOut" mnemonicParsing="false" onAction="#handleZoomOut" text="Zoom out" />
+                                 </children>
+                              </HBox>
+                              <HBox prefHeight="32.0" prefWidth="264.0" spacing="12.0">
+                                 <children>
+                                    <CheckBox fx:id="isOrbitalCamera" mnemonicParsing="false" onAction="#handleOrbitalCamera" selected="true" text="Orbital camera" />
+                                    <CheckBox fx:id="isStaticCamera" mnemonicParsing="false" onAction="#handleStaticCamera" text="Static camera">
+                                       <HBox.margin>
+                                          <Insets />
+                                       </HBox.margin>
+                                    </CheckBox>
+                                 </children>
+                              </HBox>
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Rotate X" wrappingWidth="98.34765625" />
+                              <Slider fx:id="rotateX" blockIncrement="15.0" majorTickUnit="30.0" max="90.0" min="-90.0" minorTickCount="30" showTickLabels="true" showTickMarks="true" value="-15.0" />
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Rotate Y" wrappingWidth="98.34765625" />
+                              <Slider fx:id="rotateY" blockIncrement="15.0" disable="true" majorTickUnit="30.0" max="90.0" min="-90.0" minorTickCount="30" showTickLabels="true" showTickMarks="true" value="-15.0" />
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Zoom" wrappingWidth="73.13671875" />
+                              <Slider fx:id="zoom" blockIncrement="500.0" majorTickUnit="500.0" max="3000.0" min="2.0" minorTickCount="500" prefHeight="14.0" prefWidth="254.0" value="-1500.0" />
+                           </children>
+                        </VBox>
+                     </content>
+                  </TitledPane>
+                        <TitledPane fx:id="flockRules" animated="true" prefHeight="850.0" text="Swarming">
                             <content>
                                 <VBox spacing="10.0">
                                     <children>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Rotate X"
-                                              wrappingWidth="98.34765625"/>
-                                        <Slider fx:id="rotateX" blockIncrement="15.0" majorTickUnit="30.0" max="90.0"
-                                                min="-90.0" minorTickCount="30" showTickLabels="true"
-                                                showTickMarks="true"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Rotate Y"
-                                              wrappingWidth="98.34765625"/>
-                                        <Slider fx:id="rotateY" blockIncrement="15.0" majorTickUnit="30.0" max="90.0"
-                                                min="-90.0" minorTickCount="30" showTickLabels="true"
-                                                showTickMarks="true" value="45.0"/>
-                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Zoom"
-                                              wrappingWidth="73.13671875"/>
-                                        <Slider fx:id="zoom" blockIncrement="500.0" majorTickUnit="500.0" max="3000.0"
-                                                min="-3000.0" minorTickCount="500" prefHeight="14.0" prefWidth="254.0"
-                                                showTickLabels="true" showTickMarks="true" value="-1500.0"/>
-                                        <Button fx:id="zoomOut" mnemonicParsing="false" onAction="#handleZoomOut"
-                                                text="Zoom out"/>
-                                        <Button fx:id="zoomIn" mnemonicParsing="false" onAction="#handleZoomIn"
-                                                text="Zoom in"/>
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Amount of boids" wrappingWidth="98.34765625" />
+                              <Slider fx:id="BoidAmount" majorTickUnit="20.0" max="1000.0" minorTickCount="20" showTickLabels="true" showTickMarks="true" value="20.0" />
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Cohesion" wrappingWidth="98.34765625" />
+                                        <Slider fx:id="Cohesion" blockIncrement="5.0" majorTickUnit="5.0" max="20.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" value="1.0" />
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Separation" wrappingWidth="73.13671875" />
+                                        <Slider fx:id="Separation" blockIncrement="0.1" majorTickUnit="5.0" max="20.0" minorTickCount="1" prefHeight="14.0" prefWidth="254.0" showTickLabels="true" showTickMarks="true" value="1.0" />
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Aligment" />
+                                        <Slider fx:id="Alignment" blockIncrement="5.0" majorTickUnit="5.0" max="20.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" value="1.0" />
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Min velocity" wrappingWidth="146.326171875" />
+                              <Slider fx:id="minVelocity" blockIncrement="1.0" majorTickUnit="4.0" max="20.0" min="1.0" minorTickCount="1" prefHeight="38.0" prefWidth="264.0" showTickLabels="true" showTickMarks="true" value="5.0" />
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Max velocity" wrappingWidth="146.326171875" />
+                                        <Slider fx:id="MaxVelocity" blockIncrement="1.0" majorTickUnit="4.0" max="20.0" min="1.0" minorTickCount="1" prefHeight="38.0" prefWidth="264.0" showTickLabels="true" showTickMarks="true" value="15.0" />
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Neighboorhood type" wrappingWidth="146.326171875" />
+                              <ChoiceBox fx:id="neighborhoodChoiceBox" prefWidth="150.0" />
+                                        
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Neighborhood distance" wrappingWidth="146.326171875" />
+                                        <Slider fx:id="Distance" blockIncrement="20.0" majorTickUnit="20.0" minorTickCount="0" prefHeight="38.0" prefWidth="264.0" showTickLabels="true" showTickMarks="true" value="50.0" />
+                              <Label fx:id="neighborsAmount" text="Number of neighbors" />
+                              <Slider fx:id="NeighborAmount" majorTickUnit="10.0" max="50.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" value="5.0" />
+                              <Label fx:id="neighborsAmount1" text="Size of environment" />
+                              <Slider fx:id="envSize" majorTickUnit="2000.0" max="10000.0" min="1000.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" value="3000.0" />
+                              <Label fx:id="neighborsAmount11" text="Number of obstacles" />
+                              <Slider fx:id="numberOfObstacle" majorTickUnit="10.0" max="30.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" />
                                     </children>
                                 </VBox>
                             </content>

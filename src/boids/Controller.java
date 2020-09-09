@@ -10,7 +10,6 @@ import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SubScene;
 import javafx.scene.control.*;
-import javafx.scene.input.PickResult;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
@@ -30,15 +29,19 @@ import static java.lang.Thread.sleep;
 public class Controller implements Initializable {
     private final List<Boid> boidsList = new ArrayList<>();
     private final List<Obstacle> obstacleList = new ArrayList<>();
-    public int boidAmount = 20;
-    public double distanceValue = 30;
-    public double maxVelocityValue = 2;
+    private final int WINDOW_WIDTH = 1620;
+    private final int WINDOW_HEIGHT = 1080;
     @FXML
     public VBox buttons;
     @FXML
     public CheckBox showNeighborhoodCheckBox;
     @FXML
     public CheckBox showVectorsCheckBox;
+    public int boidAmount = 20;
+    public double distanceValue = 50;
+    public double maxVelocityValue = 15;
+    public double minVelocityValue = 5;
+    public int obstaclesAmount = 0;
     boolean isStopped = false;
     boolean isIntervalMode = false;
     boolean showNeighborhood = false;
@@ -54,14 +57,10 @@ public class Controller implements Initializable {
     Translate pivot;
     Rotate yRotate;
     Rotate xRotate;
-    private Frame frame;
-    private final int WINDOW_WIDTH = 1620;
-    private final int WINDOW_HEIGHT = 1050;
-
-    private final int ENV_SIZE = 3000;
-    private final int ENVIRONMENT_WIDTH = ENV_SIZE;
-    private final int ENVIRONMENT_HEIGHT = ENV_SIZE;
-    private final int ENVIRONMENTS_DEPTH = ENV_SIZE;
+    private int ENV_SIZE = 3000;
+    private int ENVIRONMENT_WIDTH = ENV_SIZE;
+    private int ENVIRONMENT_HEIGHT = ENV_SIZE;
+    private int ENVIRONMENTS_DEPTH = ENV_SIZE;
     @FXML
     private TextField boidAmountTextField;
     @FXML
@@ -73,9 +72,13 @@ public class Controller implements Initializable {
     @FXML
     private TitledPane positionLogs, moveControl, flockRules, cameraSetup;
     @FXML
-    private Slider Cohesion, Alignment, Separation, Distance, MaxVelocity, NeighborAmount, BoidAmount;
+    private Slider Cohesion, Alignment, Separation;
+    @FXML
+    private Slider Distance, MaxVelocity, minVelocity, NeighborAmount, BoidAmount;
     @FXML
     private Slider rotateX, rotateY, zoom;
+    @FXML
+    private Slider numberOfObstacle, envSize;
     @FXML
     private VBox vboxLogs;
     @FXML
@@ -84,12 +87,16 @@ public class Controller implements Initializable {
     private ListView boidsLogs;
     @FXML
     private ChoiceBox neighborhoodChoiceBox;
+    @FXML
+    private CheckBox isStaticCamera, isOrbitalCamera;
 
 
     private Group boidGroup;
+    private Group frameLines;
     private Box boxEnvironment;
     private PerspectiveCamera camera;
     private Translate cameraPoint;
+    private Timeline timeline;
 
     @FXML
     private void handleStartClick() {
@@ -141,20 +148,33 @@ public class Controller implements Initializable {
         }
     }
 
+    @FXML
+    public void handleStaticCamera() {
+        timeline.stop();
+        isOrbitalCamera.setSelected(false);
+        rotateY.setDisable(false);
+    }
+
+    @FXML
+    public void handleOrbitalCamera() {
+        timeline.play();
+        isStaticCamera.setSelected(false);
+        rotateY.setDisable(true);
+    }
+
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        Distance.setMax(ENV_SIZE / 10);
         boidGroup = new Group();
 
-        buildBorder();
+        buildEnv();
 
         cameraStuff();
 
-        listenToObstacleAdding();
-
         initNeighborhoodChoiceBox();
 
-        menu.setExpandedPane(cameraSetup);
+        menu.setExpandedPane(flockRules);
 
 
         addListenersToSliders();
@@ -169,8 +189,8 @@ public class Controller implements Initializable {
         camera = new PerspectiveCamera();
 
         pivot = new Translate(boxEnvironment.getTranslateX(), boxEnvironment.getTranslateY(), boxEnvironment.getTranslateZ());
-        yRotate = new Rotate(-30, Rotate.Y_AXIS);
-        xRotate = new Rotate(-30, Rotate.X_AXIS);
+        yRotate = new Rotate(-15, Rotate.Y_AXIS);
+        xRotate = new Rotate(-15, Rotate.X_AXIS);
         cameraPoint = new Translate(-1000, -500, -ENVIRONMENTS_DEPTH * 2.5);
 
         camera.getTransforms().addAll(
@@ -179,7 +199,7 @@ public class Controller implements Initializable {
                 xRotate,
                 cameraPoint
         );
-        Timeline timeline = new Timeline(
+        timeline = new Timeline(
                 new KeyFrame(
                         Duration.seconds(0),
                         new KeyValue(yRotate.angleProperty(), 0)
@@ -190,31 +210,15 @@ public class Controller implements Initializable {
                 )
         );
         timeline.setCycleCount(Timeline.INDEFINITE);
-        //timeline.play();
+        timeline.play();
 
 
         boidField.setHeight(WINDOW_HEIGHT);
         boidField.setWidth(WINDOW_WIDTH);
         boidField.setCamera(camera);
         boidField.setRoot(boidGroup);
-        boidField.setFill(Color.BLACK);
     }
 
-    private void listenToObstacleAdding() {
-        boidField.setOnMouseClicked(mouseEvent -> {
-            PickResult pr = mouseEvent.getPickResult();
-            Obstacle newObstacle = new Obstacle(
-                    new Sphere(50),
-                    Color.ORANGE,
-                    pr.getIntersectedPoint().getX(),
-                    pr.getIntersectedPoint().getY(),
-                    pr.getIntersectedPoint().getZ()
-            );
-            boidGroup.getChildren().add(newObstacle.getShape3D());
-            obstacleList.add(newObstacle);
-
-        });
-    }
 
     private void initNeighborhoodChoiceBox() {
         neighborhoodChoiceBox.getItems().add(NeighborhoodType.DISTANCE.toString());
@@ -222,6 +226,9 @@ public class Controller implements Initializable {
         neighborhoodChoiceBox.setValue(neighborhoodChoiceBox.getItems().get(0));
         NeighborAmount.setDisable(true);
 
+    }
+
+    private void addListenersToSliders() {
         neighborhoodChoiceBox.valueProperty().addListener((ov, old_val, new_val) -> {
             neighborhoodType = NeighborhoodType.valueOf((String) new_val);
             switch (neighborhoodType) {
@@ -236,10 +243,6 @@ public class Controller implements Initializable {
             }
 
         });
-
-    }
-
-    private void addListenersToSliders() {
         Cohesion.valueProperty().addListener((ov, old_val, new_val) -> {
             cohesionWeight = (double) new_val;
         });
@@ -255,16 +258,17 @@ public class Controller implements Initializable {
         MaxVelocity.valueProperty().addListener((ov, old_val, new_val) -> {
             maxVelocityValue = (double) new_val;
         });
+        minVelocity.valueProperty().addListener((ov, old_val, new_val) -> {
+            minVelocityValue = (double) new_val;
+        });
         BoidAmount.valueProperty().addListener((ov, old_val, new_val) -> {
             boidAmount = new_val.intValue();
 
             if (boidAmount > old_val.doubleValue()) {
                 initExtraBoids(boidAmount - boidsList.size());
-                NeighborAmount.setMax(boidAmount);
             } else {
                 deleteBoidsTo(boidAmount);
             }
-
             NeighborAmount.setMax(boidAmount);
         });
         NeighborAmount.valueProperty().addListener((ov, old_val, new_val) -> {
@@ -283,6 +287,58 @@ public class Controller implements Initializable {
             double zoom = (double) new_val - (double) old_val;
             cameraPoint.setZ(cameraPoint.getZ() + zoom);
         });
+        numberOfObstacle.valueProperty().addListener((ov, old_val, new_val) -> {
+            obstaclesAmount = new_val.intValue();
+            if (obstaclesAmount > old_val.intValue()) {
+                addObstacles(obstaclesAmount - obstacleList.size());
+            } else {
+                deleteObstaclesTo(obstaclesAmount);
+            }
+        });
+        envSize.valueProperty().addListener((ov, old_val, new_val) -> {
+            ENV_SIZE = (int) (double) new_val;
+            ENVIRONMENT_WIDTH = ENV_SIZE;
+            ENVIRONMENT_HEIGHT = ENV_SIZE;
+            ENVIRONMENTS_DEPTH = ENV_SIZE;
+            boidGroup.getChildren().remove(boxEnvironment);
+            boidGroup.getChildren().remove(frameLines);
+            buildEnv();
+            cameraStuff();
+            deleteBoidsTo(0);
+            deleteObstaclesTo(0);
+            initExtraBoids(boidAmount);
+            addObstacles(obstaclesAmount);
+
+        });
+    }
+
+    private void deleteObstaclesTo(double obstaclesAmount) {
+        while (obstacleList.size() != obstaclesAmount) {
+            obstacleList.get(obstacleList.size() - 1).getShape3D().setOpacity(0);
+            obstacleList.remove(obstacleList.size() - 1);
+        }
+    }
+    //private void deleteBoidsTo(int boidAmount) {
+    //    while (boidsList.size() != boidAmount) {
+    //        boidsList.get(boidsList.size() - 1).boidSphere.setOpacity(0);
+    //        boidsList.get(boidsList.size() - 1).neighborhoodSphere.setOpacity(0);
+    //        boidsList.get(boidsList.size() - 1).getVelocityLine().setOpacity(0);
+    //        boidsList.remove(boidsList.size() - 1);
+    //    }
+    //}
+
+    private void addObstacles(double amount) {
+        for (int i = 0; i < amount; i++) {
+            Obstacle newObstacle = new Obstacle(
+                    new Sphere(ENV_SIZE / 50),
+                    Color.ORANGE,
+                    random.nextInt(ENV_SIZE - 100),
+                    random.nextInt(ENV_SIZE - 100),
+                    random.nextInt(ENV_SIZE - 100)
+            );
+            boidGroup.getChildren().add(newObstacle.getShape3D());
+            obstacleList.add(newObstacle);
+        }
     }
 
     private void play() {
@@ -291,7 +347,7 @@ public class Controller implements Initializable {
             public void handle(long now) {
                 if (!isStopped) {
                     try {
-                        updateBoidsPositions(frame, neighborhoodType);
+                        updateBoidsPositions(neighborhoodType);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (Exception e) {
@@ -301,9 +357,10 @@ public class Controller implements Initializable {
             }
         };
         timer.start();
+
     }
 
-    public void updateBoidsPositions(Frame frame, NeighborhoodType neighborhoodType) throws Exception {
+    public void updateBoidsPositions(NeighborhoodType neighborhoodType) throws Exception {
 
         switch (neighborhoodType) {
             case DISTANCE:
@@ -315,7 +372,7 @@ public class Controller implements Initializable {
         }
 
         for (boids.Boid boid : boidsList) {
-            boid.update(showNeighborhood, showVectors, alignmentWeight, separationWeight, cohesionWeight, distanceValue, maxVelocityValue, neighborhoodType);
+            boid.update(showNeighborhood, showVectors, alignmentWeight, separationWeight, cohesionWeight, distanceValue, maxVelocityValue, minVelocityValue);
         }
 
         //updateLogs();
@@ -425,10 +482,10 @@ public class Controller implements Initializable {
         boidGroup.getChildren().add(boid.getVelocityLine());
     }
 
-    private void buildBorder() {
+    private void buildEnv() {
         boxEnvironment = new Box(ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT, ENVIRONMENTS_DEPTH);
         PhongMaterial phongMaterial = new PhongMaterial();
-        phongMaterial.setDiffuseColor(Color.web("#262418"));
+        phongMaterial.setDiffuseColor(Color.GRAY.brighter());
         boxEnvironment.setMaterial(phongMaterial);
 
         boxEnvironment.setTranslateX(ENVIRONMENT_WIDTH / 2);
@@ -440,9 +497,9 @@ public class Controller implements Initializable {
     }
 
     private Group buildFrames() {
-        Group frameLines = new Group();
-        PhongMaterial frameColor = new PhongMaterial(Color.BLUE);
-        double frameSize = 30;
+        frameLines = new Group();
+        PhongMaterial frameColor = new PhongMaterial(Color.BLACK.darker());
+        double frameSize = ENV_SIZE / 100;
 
         Box line1 = new Box(1, ENVIRONMENT_HEIGHT, frameSize);
         line1.setMaterial(frameColor);
