@@ -34,7 +34,7 @@ public class Controller implements Initializable {
     @FXML
     public VBox buttons;
     @FXML
-    public CheckBox showNeighborhoodCheckBox;
+    public CheckBox showNeighborhoodCheckBox, isLeaderInEnv;
     @FXML
     public CheckBox showVectorsCheckBox;
     public int boidAmount = 20;
@@ -50,6 +50,7 @@ public class Controller implements Initializable {
     double alignmentWeight = 0.5;
     double separationWeight = 0.5;
     double cohesionWeight = 0.5;
+    Integer prevSelectedIndex = null;
     NeighborhoodType neighborhoodType = NeighborhoodType.DISTANCE;
     Random random = new Random();
     @FXML
@@ -57,6 +58,7 @@ public class Controller implements Initializable {
     Translate pivot;
     Rotate yRotate;
     Rotate xRotate;
+    private Leader leader;
     private int ENV_SIZE = 3000;
     private int ENVIRONMENT_WIDTH = ENV_SIZE;
     private int ENVIRONMENT_HEIGHT = ENV_SIZE;
@@ -94,7 +96,6 @@ public class Controller implements Initializable {
     private Group boidGroup;
     private Group frameLines;
     private Box boxEnvironment;
-    private PerspectiveCamera camera;
     private Translate cameraPoint;
     private Timeline timeline;
 
@@ -132,20 +133,12 @@ public class Controller implements Initializable {
 
     @FXML
     public void handleShowNeighborhood() {
-        if (showNeighborhood) {
-            showNeighborhood = false;
-        } else {
-            showNeighborhood = true;
-        }
+        showNeighborhood = !showNeighborhood;
     }
 
     @FXML
     public void handleShowVectors() {
-        if (showVectors) {
-            showVectors = false;
-        } else {
-            showVectors = true;
-        }
+        showVectors = !showVectors;
     }
 
     @FXML
@@ -162,31 +155,51 @@ public class Controller implements Initializable {
         rotateY.setDisable(true);
     }
 
+    @FXML
+    public void handleLeaderCheckBox() {
+        if (isLeaderInEnv.isSelected()) {
+            addLeaderToEnv();
+        } else {
+            removeLeaderFromEnv();
+        }
+    }
+
+
+    private void addLeaderToEnv() {
+        leader = new Leader(ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT, ENVIRONMENTS_DEPTH);
+        boidGroup.getChildren().add(leader.getLeaderSphere());
+    }
+
+    private void removeLeaderFromEnv() {
+
+    }
+
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        Distance.setMax(ENV_SIZE / 10);
+        Distance.setMax(ENV_SIZE / 10d);
+        boidField.setHeight(WINDOW_HEIGHT);
+        boidField.setWidth(WINDOW_WIDTH);
+
         boidGroup = new Group();
 
         buildEnv();
-
         cameraStuff();
-
         initNeighborhoodChoiceBox();
-
         menu.setExpandedPane(flockRules);
 
+        boidField.setRoot(boidGroup);
 
-        addListenersToSliders();
         buttons.setSpacing(5);
 
         initBoids(boidAmount);
         initLogs();
+        addListenersToUIElements();
         play();
     }
 
     private void cameraStuff() {
-        camera = new PerspectiveCamera();
+        PerspectiveCamera camera = new PerspectiveCamera();
 
         pivot = new Translate(boxEnvironment.getTranslateX(), boxEnvironment.getTranslateY(), boxEnvironment.getTranslateZ());
         yRotate = new Rotate(-15, Rotate.Y_AXIS);
@@ -205,18 +218,14 @@ public class Controller implements Initializable {
                         new KeyValue(yRotate.angleProperty(), 0)
                 ),
                 new KeyFrame(
-                        Duration.seconds(120),
+                        Duration.seconds(240),
                         new KeyValue(yRotate.angleProperty(), 360)
                 )
         );
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
 
-
-        boidField.setHeight(WINDOW_HEIGHT);
-        boidField.setWidth(WINDOW_WIDTH);
         boidField.setCamera(camera);
-        boidField.setRoot(boidGroup);
     }
 
 
@@ -228,7 +237,7 @@ public class Controller implements Initializable {
 
     }
 
-    private void addListenersToSliders() {
+    private void addListenersToUIElements() {
         neighborhoodChoiceBox.valueProperty().addListener((ov, old_val, new_val) -> {
             neighborhoodType = NeighborhoodType.valueOf((String) new_val);
             switch (neighborhoodType) {
@@ -310,6 +319,22 @@ public class Controller implements Initializable {
             addObstacles(obstaclesAmount);
 
         });
+        logs.setOnMouseClicked(mouseEvent -> {
+
+            int selectedIndex = logs.getSelectionModel().getSelectedIndex();
+            Sphere sphere = (Sphere) boidsList.get(selectedIndex).getBoidView();
+            sphere.setMaterial(new PhongMaterial(Color.GREEN));
+
+            if (prevSelectedIndex == null)
+                prevSelectedIndex = selectedIndex;
+
+            if (selectedIndex != prevSelectedIndex) {
+                Sphere spherePrev = (Sphere) boidsList.get(prevSelectedIndex).getBoidView();
+                spherePrev.setMaterial(new PhongMaterial(Color.RED));
+            }
+
+            prevSelectedIndex = selectedIndex;
+        });
     }
 
     private void deleteObstaclesTo(double obstaclesAmount) {
@@ -318,14 +343,6 @@ public class Controller implements Initializable {
             obstacleList.remove(obstacleList.size() - 1);
         }
     }
-    //private void deleteBoidsTo(int boidAmount) {
-    //    while (boidsList.size() != boidAmount) {
-    //        boidsList.get(boidsList.size() - 1).boidSphere.setOpacity(0);
-    //        boidsList.get(boidsList.size() - 1).neighborhoodSphere.setOpacity(0);
-    //        boidsList.get(boidsList.size() - 1).getVelocityLine().setOpacity(0);
-    //        boidsList.remove(boidsList.size() - 1);
-    //    }
-    //}
 
     private void addObstacles(double amount) {
         for (int i = 0; i < amount; i++) {
@@ -347,7 +364,7 @@ public class Controller implements Initializable {
             public void handle(long now) {
                 if (!isStopped) {
                     try {
-                        updateBoidsPositions(neighborhoodType);
+                        updateEnv(neighborhoodType);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } catch (Exception e) {
@@ -360,7 +377,7 @@ public class Controller implements Initializable {
 
     }
 
-    public void updateBoidsPositions(NeighborhoodType neighborhoodType) throws Exception {
+    public void updateEnv(NeighborhoodType neighborhoodType) throws Exception {
 
         switch (neighborhoodType) {
             case DISTANCE:
@@ -375,7 +392,10 @@ public class Controller implements Initializable {
             boid.update(showNeighborhood, showVectors, alignmentWeight, separationWeight, cohesionWeight, distanceValue, maxVelocityValue, minVelocityValue);
         }
 
-        //updateLogs();
+        if (leader != null)
+            leader.update();
+
+        updateLogs();
 
         for (Boid boid : boidsList) {
             boid.clearNeighborhoodList();
@@ -406,12 +426,12 @@ public class Controller implements Initializable {
 
     private void updateLogs() {
         AtomicInteger counter = new AtomicInteger();
-        // TODO addextraLogs
         for (Boid boid : boidsList
         ) {
             logs.getItems().set(counter.get(), boid.toString() + " neighbors: " + boid.neighborhoodList.size());
             counter.getAndIncrement();
         }
+
     }
 
     private void findNeighborsByDistance(double distance) {
@@ -435,34 +455,33 @@ public class Controller implements Initializable {
                     "     Y:" + boid.getBoidView().getTranslateY());
 
         }
+        logs.prefHeightProperty().set(950);
         boidsLogs.getItems().setAll(logs);
     }
 
     public void initBoids(int amount) {
         for (int i = 1; i <= amount; i++) {
-            int random_x = random.nextInt(ENVIRONMENT_WIDTH);
-            int random_y = random.nextInt(ENVIRONMENT_HEIGHT);
-            int random_z = random.nextInt(ENVIRONMENTS_DEPTH);
-
-            Boid boid = new Boid(random_x, random_y, random_z, ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT, ENVIRONMENTS_DEPTH);
-
-            boid.setName("Boid no. " + i);
-            addBoid(boid);
+            addRandomBoid(i);
         }
     }
 
     public void initExtraBoids(int amount) {
         int n = boidsList.size();
         for (int i = boidsList.size(); i <= amount + n; i++) {
-            int random_x = random.nextInt(ENVIRONMENT_WIDTH);
-            int random_y = random.nextInt(ENVIRONMENT_HEIGHT);
-            int random_z = random.nextInt(ENVIRONMENTS_DEPTH);
-
-            Boid boid = new Boid(random_x, random_y, random_z, ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT, ENVIRONMENTS_DEPTH);
-
-            boid.setName("Boid no. " + i);
-            addBoid(boid);
+            addRandomBoid(i);
         }
+        initLogs();
+    }
+
+    private void addRandomBoid(int boidIndex) {
+        int random_x = random.nextInt(ENVIRONMENT_WIDTH);
+        int random_y = random.nextInt(ENVIRONMENT_HEIGHT);
+        int random_z = random.nextInt(ENVIRONMENTS_DEPTH);
+
+        Boid boid = new Boid(random_x, random_y, random_z, ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT, ENVIRONMENTS_DEPTH);
+
+        boid.setName("Boid no. " + boidIndex);
+        addBoid(boid);
     }
 
     private void deleteBoidsTo(int boidAmount) {
@@ -488,9 +507,9 @@ public class Controller implements Initializable {
         phongMaterial.setDiffuseColor(Color.GRAY.brighter());
         boxEnvironment.setMaterial(phongMaterial);
 
-        boxEnvironment.setTranslateX(ENVIRONMENT_WIDTH / 2);
-        boxEnvironment.setTranslateY(ENVIRONMENT_HEIGHT / 2);
-        boxEnvironment.setTranslateZ(ENVIRONMENTS_DEPTH / 2);
+        boxEnvironment.setTranslateX(ENVIRONMENT_WIDTH / 2d);
+        boxEnvironment.setTranslateY(ENVIRONMENT_HEIGHT / 2d);
+        boxEnvironment.setTranslateZ(ENVIRONMENTS_DEPTH / 2d);
 
         boidGroup.getChildren().add(boxEnvironment);
         boidGroup.getChildren().add(buildFrames());
@@ -499,51 +518,51 @@ public class Controller implements Initializable {
     private Group buildFrames() {
         frameLines = new Group();
         PhongMaterial frameColor = new PhongMaterial(Color.BLACK.darker());
-        double frameSize = ENV_SIZE / 100;
+        double frameSize = ENV_SIZE / 100d;
 
         Box line1 = new Box(1, ENVIRONMENT_HEIGHT, frameSize);
         line1.setMaterial(frameColor);
         line1.setTranslateX(0);
-        line1.setTranslateY(ENVIRONMENT_WIDTH / 2);
+        line1.setTranslateY(ENVIRONMENT_WIDTH / 2d);
 
         Box line2 = new Box(ENVIRONMENT_WIDTH, 1, frameSize);
         line2.setMaterial(frameColor);
-        line2.setTranslateX(ENVIRONMENT_WIDTH / 2);
+        line2.setTranslateX(ENVIRONMENT_WIDTH / 2d);
         line2.setTranslateY(0);
 
 
         Box line3 = new Box(1, ENVIRONMENT_HEIGHT, frameSize);
         line3.setMaterial(frameColor);
         line3.setTranslateX(ENVIRONMENT_WIDTH);
-        line3.setTranslateY(ENVIRONMENT_HEIGHT / 2);
+        line3.setTranslateY(ENVIRONMENT_HEIGHT / 2d);
 
         Box line4 = new Box(ENVIRONMENT_WIDTH + 1, 1, frameSize);
         line4.setMaterial(frameColor);
-        line4.setTranslateX(ENVIRONMENT_WIDTH / 2);
+        line4.setTranslateX(ENVIRONMENT_WIDTH / 2d);
         line4.setTranslateY(ENVIRONMENT_HEIGHT);
 
         // in z translated
         Box line5 = new Box(1, ENVIRONMENT_HEIGHT, frameSize);
         line5.setMaterial(frameColor);
         line5.setTranslateX(0);
-        line5.setTranslateY(ENVIRONMENT_WIDTH / 2);
+        line5.setTranslateY(ENVIRONMENT_WIDTH / 2d);
         line5.setTranslateZ(ENVIRONMENTS_DEPTH);
 
         Box line6 = new Box(ENVIRONMENT_WIDTH, 1, frameSize);
         line6.setMaterial(frameColor);
-        line6.setTranslateX(ENVIRONMENT_WIDTH / 2);
+        line6.setTranslateX(ENVIRONMENT_WIDTH / 2d);
         line6.setTranslateY(0);
         line6.setTranslateZ(ENVIRONMENTS_DEPTH);
 
         Box line7 = new Box(1, ENVIRONMENT_HEIGHT, frameSize);
         line7.setMaterial(frameColor);
         line7.setTranslateX(ENVIRONMENT_WIDTH);
-        line7.setTranslateY(ENVIRONMENT_HEIGHT / 2);
+        line7.setTranslateY(ENVIRONMENT_HEIGHT / 2d);
         line7.setTranslateZ(ENVIRONMENTS_DEPTH);
 
         Box line8 = new Box(ENVIRONMENT_WIDTH + 1, 1, frameSize);
         line8.setMaterial(frameColor);
-        line8.setTranslateX(ENVIRONMENT_WIDTH / 2);
+        line8.setTranslateX(ENVIRONMENT_WIDTH / 2d);
         line8.setTranslateY(ENVIRONMENT_HEIGHT);
         line8.setTranslateZ(ENVIRONMENTS_DEPTH);
 
@@ -552,7 +571,7 @@ public class Controller implements Initializable {
         line9.setMaterial(frameColor);
         line9.setTranslateX(ENVIRONMENT_WIDTH);
         line9.setTranslateY(ENVIRONMENT_HEIGHT);
-        line9.setTranslateZ(ENVIRONMENTS_DEPTH / 2);
+        line9.setTranslateZ(ENVIRONMENTS_DEPTH / 2d);
         line9.setRotationAxis(Rotate.Y_AXIS);
         line9.setRotate(90);
 
@@ -560,7 +579,7 @@ public class Controller implements Initializable {
         line10.setMaterial(frameColor);
         line10.setTranslateX(0);
         line10.setTranslateY(ENVIRONMENT_HEIGHT);
-        line10.setTranslateZ(ENVIRONMENTS_DEPTH / 2);
+        line10.setTranslateZ(ENVIRONMENTS_DEPTH / 2d);
         line10.setRotationAxis(Rotate.Y_AXIS);
         line10.setRotate(90);
 
@@ -569,7 +588,7 @@ public class Controller implements Initializable {
         line11.setMaterial(frameColor);
         line11.setTranslateX(0);
         line11.setTranslateY(0);
-        line11.setTranslateZ(ENVIRONMENTS_DEPTH / 2);
+        line11.setTranslateZ(ENVIRONMENTS_DEPTH / 2d);
         line11.setRotationAxis(Rotate.Y_AXIS);
         line11.setRotate(90);
 
@@ -577,7 +596,7 @@ public class Controller implements Initializable {
         line12.setMaterial(frameColor);
         line12.setTranslateX(ENVIRONMENT_WIDTH);
         line12.setTranslateY(0);
-        line12.setTranslateZ(ENVIRONMENTS_DEPTH / 2);
+        line12.setTranslateZ(ENVIRONMENTS_DEPTH / 2d);
         line12.setRotationAxis(Rotate.Y_AXIS);
         line12.setRotate(90);
 

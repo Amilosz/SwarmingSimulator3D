@@ -14,6 +14,7 @@ import static java.lang.StrictMath.abs;
 import static java.lang.StrictMath.pow;
 
 public class Boid {
+    boolean isAlive = true;
     static double MAX_VELOCITY = 15;
     static double MIN_VELOCITY = 5;
     private final Node boidView;
@@ -42,7 +43,7 @@ public class Boid {
 
         neighborhoodSphere = new Sphere(0);
         PhongMaterial phongMaterial2 = new PhongMaterial();
-        phongMaterial2.setDiffuseColor(Color.GRAY);
+        phongMaterial2.setDiffuseColor(Color.GRAY.brighter());
         neighborhoodSphere.setMaterial(phongMaterial2);
         neighborhoodSphere.setOpacity(0.1);
         neighborhoodView = neighborhoodSphere;
@@ -101,8 +102,6 @@ public class Boid {
             velocity = velocity.normalizeTo(MAX_VELOCITY);
         if (velocity.getMagnitude()<MIN_VELOCITY)
             velocity = velocity.normalizeTo(MIN_VELOCITY);
-
-
 
         location = location.plus(velocity);
 
