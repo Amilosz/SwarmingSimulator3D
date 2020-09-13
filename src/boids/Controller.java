@@ -34,7 +34,7 @@ public class Controller implements Initializable {
     @FXML
     public VBox buttons;
     @FXML
-    public CheckBox showNeighborhoodCheckBox, isLeaderInEnv;
+    public CheckBox showNeighborhoodCheckBox, isLeaderInEnv, isPredatorInEnv;
     @FXML
     public CheckBox showVectorsCheckBox;
     public int boidAmount = 20;
@@ -58,7 +58,8 @@ public class Controller implements Initializable {
     Translate pivot;
     Rotate yRotate;
     Rotate xRotate;
-    private Leader leader;
+    private Leader leader = null;
+    private Predator predator = null;
     private int ENV_SIZE = 3000;
     private int ENVIRONMENT_WIDTH = ENV_SIZE;
     private int ENVIRONMENT_HEIGHT = ENV_SIZE;
@@ -164,6 +165,26 @@ public class Controller implements Initializable {
         }
     }
 
+    @FXML
+    public void handlePredatorCheckBox() {
+        if (isPredatorInEnv.isSelected()) {
+            addPredatorToEnv();
+        } else {
+            removePredatorFromEnv();
+        }
+    }
+
+    private void removePredatorFromEnv() {
+        boidGroup.getChildren().remove(predator);
+        predator.getPredatorSphere().setOpacity(0);
+        predator = null;
+    }
+
+    private void addPredatorToEnv() {
+        predator = new Predator(ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT, ENVIRONMENTS_DEPTH);
+        boidGroup.getChildren().add(predator.getPredatorSphere());
+    }
+
 
     private void addLeaderToEnv() {
         leader = new Leader(ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT, ENVIRONMENTS_DEPTH);
@@ -171,6 +192,9 @@ public class Controller implements Initializable {
     }
 
     private void removeLeaderFromEnv() {
+        boidGroup.getChildren().remove(leader);
+        leader.getLeaderSphere().setOpacity(0);
+        leader = null;
 
     }
 
@@ -317,6 +341,14 @@ public class Controller implements Initializable {
             deleteObstaclesTo(0);
             initExtraBoids(boidAmount);
             addObstacles(obstaclesAmount);
+            if (isLeaderInEnv.isSelected())
+                removeLeaderFromEnv();
+                addLeaderToEnv();
+
+            if (isPredatorInEnv.isSelected())
+                removePredatorFromEnv();
+                addPredatorToEnv();
+
 
         });
         logs.setOnMouseClicked(mouseEvent -> {
@@ -389,11 +421,15 @@ public class Controller implements Initializable {
         }
 
         for (boids.Boid boid : boidsList) {
-            boid.update(showNeighborhood, showVectors, alignmentWeight, separationWeight, cohesionWeight, distanceValue, maxVelocityValue, minVelocityValue);
+            boid.update(showNeighborhood, showVectors, alignmentWeight, separationWeight, cohesionWeight,
+                    distanceValue, maxVelocityValue, minVelocityValue, leader, predator, obstacleList);
         }
 
         if (leader != null)
             leader.update();
+
+        if (predator != null)
+            predator.update(boidsList);
 
         updateLogs();
 
@@ -424,16 +460,6 @@ public class Controller implements Initializable {
         }
     }
 
-    private void updateLogs() {
-        AtomicInteger counter = new AtomicInteger();
-        for (Boid boid : boidsList
-        ) {
-            logs.getItems().set(counter.get(), boid.toString() + " neighbors: " + boid.neighborhoodList.size());
-            counter.getAndIncrement();
-        }
-
-    }
-
     private void findNeighborsByDistance(double distance) {
 
         for (int i = 0; i < boidsList.size(); i++)
@@ -444,6 +470,16 @@ public class Controller implements Initializable {
                     boidsList.get(j).addNeighbor(boidsList.get(i));
                 }
             }
+    }
+
+    private void updateLogs() {
+        AtomicInteger counter = new AtomicInteger();
+        for (Boid boid : boidsList
+        ) {
+            logs.getItems().set(counter.get(), boid.toString() + " neighbors: " + boid.neighborhoodList.size());
+            counter.getAndIncrement();
+        }
+
     }
 
     private void initLogs() {

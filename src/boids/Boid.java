@@ -14,25 +14,22 @@ import static java.lang.StrictMath.abs;
 import static java.lang.StrictMath.pow;
 
 public class Boid {
-    boolean isAlive = true;
     static double MAX_VELOCITY = 15;
     static double MIN_VELOCITY = 5;
     private final Node boidView;
     private final Node neighborhoodView;
-    List<Boid> neighborhoodList = new ArrayList<>();
-
-    Random random = new Random();
-
-    Sphere boidSphere;
-    Sphere neighborhoodSphere;
-
     private final Line velocityLine;
-    private String name;
-    private Vector3D velocity;
-    private Vector3D location;
     private final int ENVIRONMENTS_DEPTH;
     private final int ENVIRONMENT_WIDTH;
     private final int ENVIRONMENTS_HEIGHT;
+    boolean isAlive = true;
+    List<Boid> neighborhoodList = new ArrayList<>();
+    Random random = new Random();
+    Sphere boidSphere;
+    Sphere neighborhoodSphere;
+    private String name;
+    private Vector3D velocity;
+    private Vector3D location;
 
     public Boid(double x, double y, double z, int ENVIRONMENT_WIDTH, int ENVIRONMENTS_HEIGHT, int ENVIRONMENTS_DEPTH) {
         boidSphere = new Sphere(20);
@@ -73,23 +70,41 @@ public class Boid {
         return getName() + "  X:" + x + "  Y: " + y;
     }
 
-    public void update(boolean showNeighborhood, boolean showVectors, double alignmentWeight, double separationWeight, double cohesionWeight, double distance, double maxVelocity, double minVelocity) {
+    public void update(boolean showNeighborhood, boolean showVectors, double alignmentWeight, double separationWeight, double cohesionWeight, double distance, double maxVelocity, double minVelocity, Leader leader, Predator predator, List<Obstacle> obstacleList) {
         MAX_VELOCITY = maxVelocity;
         MIN_VELOCITY = minVelocity;
 
-        if (!neighborhoodList.isEmpty()) {
-            Vector3D cohesionForce = getCohesionControl(cohesionWeight);
-            velocity = velocity.plus(cohesionForce);
-
-            Vector3D separationForce = getSeparationControl(separationWeight);
-            velocity = velocity.plus(separationForce);
-
-            Vector3D alignmentForce = getAlignmentControl(alignmentWeight);
-            velocity = velocity.plus(alignmentForce);
-
-            Vector3D obstacleAvoidanceForce = getObstacleAvoidanceControl(distance);
-            velocity = velocity.plus(obstacleAvoidanceForce);
+        for (Obstacle obstacle : obstacleList){
+            if ( getDistanceFrom(obstacle) < 100)
+                velocity = velocity.plus(location.minus(obstacle.getLocation()));
         }
+
+        if (predator !=null && getDistanceFrom(predator) < 400)
+        {
+            Vector3D avoidPredatorForce = getAvoidPredatorForce(predator);
+            velocity = velocity.plus(avoidPredatorForce.normalizeTo(maxVelocity*2));
+        }
+        if (leader != null) {
+            if (getDistanceFrom(leader) > 30) {
+                Vector3D followLeaderForce = getFollowLeaderForce(leader);
+                velocity = velocity.plus(followLeaderForce).normalizeTo(maxVelocity);
+            }
+        } else {
+            if (!neighborhoodList.isEmpty()) {
+                Vector3D cohesionForce = getCohesionControl(cohesionWeight);
+                velocity = velocity.plus(cohesionForce);
+
+                Vector3D separationForce = getSeparationControl(separationWeight);
+                velocity = velocity.plus(separationForce);
+
+                Vector3D alignmentForce = getAlignmentControl(alignmentWeight);
+                velocity = velocity.plus(alignmentForce);
+
+                Vector3D obstacleAvoidanceForce = getObstacleAvoidanceControl(distance);
+                velocity = velocity.plus(obstacleAvoidanceForce);
+            }
+        }
+
 
         //wander();
         if (random.nextDouble() > 0.60d)
@@ -98,9 +113,9 @@ public class Boid {
         bounceOffTheWallIfCollidingWith();
 
         //applyMove();
-        if (velocity.getMagnitude()>MAX_VELOCITY)
+        if (velocity.getMagnitude() > MAX_VELOCITY)
             velocity = velocity.normalizeTo(MAX_VELOCITY);
-        if (velocity.getMagnitude()<MIN_VELOCITY)
+        if (velocity.getMagnitude() < MIN_VELOCITY)
             velocity = velocity.normalizeTo(MIN_VELOCITY);
 
         location = location.plus(velocity);
@@ -109,6 +124,18 @@ public class Boid {
         //setEndOfVectorLine(maxVelocity);
 
         render(showNeighborhood, showVectors, distance);
+    }
+
+    private Vector3D getAvoidPredatorForce(Predator predator) {
+        Vector3D avoidPredatorForce = location.minus(predator.getLocation());
+        avoidPredatorForce.normalizeTo(1);
+        return avoidPredatorForce;
+    }
+
+    private Vector3D getFollowLeaderForce(Leader leader) {
+        Vector3D followLeaderForce = leader.getLocation().minus(this.location);
+        followLeaderForce.normalizeTo(1);
+        return followLeaderForce;
     }
 
     private Vector3D getObstacleAvoidanceControl(double inDistance) {
@@ -133,11 +160,6 @@ public class Boid {
         return ObstacleDetection.RIGHT;
     }
 
-    private void setEndOfVectorLine(double maxVelocity) {
-        Vector3D future_location = location.plus(velocity.normalizeTo(maxVelocity + 30));
-        velocityLine.setEndX(future_location.getX());
-        velocityLine.setEndY(future_location.getY());
-    }
 
     private Vector3D getAlignmentControl(double alignmentWeight) {
         Vector3D neighbourhoodVelocity = getNeighbourhoodAverageVelocity();
@@ -159,14 +181,15 @@ public class Boid {
         return separationControl.normalizeTo(forceWeight);
     }
 
+
     public Vector3D getNeighbourhoodAverageLocation() {
         double centerX = 0d;
         double centerY = 0d;
         double centerZ = 0d;
         for (Boid neighbor : neighborhoodList) {
-            centerX += neighbor.getLocationVector().getX();
-            centerY += neighbor.getLocationVector().getY();
-            centerZ += neighbor.getLocationVector().getZ();
+            centerX += neighbor.getLocation().getX();
+            centerY += neighbor.getLocation().getY();
+            centerZ += neighbor.getLocation().getZ();
         }
         return new Vector3D(centerX / neighborhoodList.size(), centerY / neighborhoodList.size(), centerZ / neighborhoodList.size());
     }
@@ -219,6 +242,34 @@ public class Boid {
         return result_c;
     }
 
+    // TODO; generify boid, leader, obstacle and predator
+    public double getDistanceFrom(Leader leader) {
+        double differenceOfX = this.getBoidView().getTranslateX() - leader.getLeaderSphere().getTranslateX();
+        double differenceOfY = this.getBoidView().getTranslateY() - leader.getLeaderSphere().getTranslateY();
+        double differenceOfZ = this.getBoidView().getTranslateZ() - leader.getLeaderSphere().getTranslateZ();
+
+        double result_c = Math.sqrt(abs(pow(differenceOfX, 2) + pow(differenceOfY, 2) + pow(differenceOfZ, 2)));
+        return result_c;
+    }
+
+    public double getDistanceFrom(Predator predator) {
+        double differenceOfX = this.getBoidView().getTranslateX() - predator.getPredatorSphere().getTranslateX();
+        double differenceOfY = this.getBoidView().getTranslateY() - predator.getPredatorSphere().getTranslateY();
+        double differenceOfZ = this.getBoidView().getTranslateZ() - predator.getPredatorSphere().getTranslateZ();
+
+        double result_c = Math.sqrt(abs(pow(differenceOfX, 2) + pow(differenceOfY, 2) + pow(differenceOfZ, 2)));
+        return result_c;
+    }
+
+    public double getDistanceFrom(Obstacle obstacle) {
+        double differenceOfX = this.getBoidView().getTranslateX() - obstacle.getShape3D().getTranslateX();
+        double differenceOfY = this.getBoidView().getTranslateY() - obstacle.getShape3D().getTranslateY();
+        double differenceOfZ = this.getBoidView().getTranslateZ() - obstacle.getShape3D().getTranslateZ();
+
+        double result_c = Math.sqrt(abs(pow(differenceOfX, 2) + pow(differenceOfY, 2) + pow(differenceOfZ, 2)));
+        return result_c;
+    }
+
     private void bounceOffTheWallIfCollidingWith() {
         if (location.getX() < 0)
             velocity.setX(1);
@@ -247,7 +298,7 @@ public class Boid {
         this.name = name;
     }
 
-    public Vector3D getLocationVector() {
+    public Vector3D getLocation() {
         return location;
     }
 

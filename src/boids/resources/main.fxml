@@ -46,6 +46,7 @@
                                         <Button fx:id="continueAnimationButton" onAction="#handleContinueClick" text="1s interval" />
                                         <CheckBox fx:id="showNeighborhoodCheckBox" onAction="#handleShowNeighborhood" text="Show neighborhood" />
                               <CheckBox fx:id="isLeaderInEnv" mnemonicParsing="false" onAction="#handleLeaderCheckBox" text="Add lider" />
+                              <CheckBox fx:id="isPredatorInEnv" mnemonicParsing="false" onAction="#handlePredatorCheckBox" text="Add predator" />
                                         <Label fx:id="neighborsAmount1" text="Size of environment" />
                                         <Slider fx:id="envSize" majorTickUnit="2000.0" max="10000.0" min="1000.0" minorTickCount="0" showTickLabels="true" showTickMarks="true" value="3000.0" />
                                         <Label fx:id="neighborsAmount11" text="Number of obstacles" />
@@ -60,7 +61,7 @@
                            <children>
                               <Pane prefHeight="200.0" prefWidth="255.0">
                                  <children>
-                                              <ListView fx:id="boidsLogs" layoutX="-9.0" minHeight="1000.0" minWidth="-Infinity"  prefWidth="320.0" />
+                                              <ListView fx:id="boidsLogs" layoutX="-9.0" minHeight="1000.0" minWidth="-Infinity" prefWidth="320.0" />
                                  </children>
                               </Pane>
                            </children>
